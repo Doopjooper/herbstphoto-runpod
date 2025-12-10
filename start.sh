@@ -90,9 +90,9 @@ if [ ! -f models/loras/HerbstPhoto_v4_Flux2.safetensors ]; then
     "https://huggingface.co/CalvinHerbst/HerbstPhoto_v4_Flux2/resolve/main/HerbstPhoto_v4_Flux2.safetensors"
 fi
 
-# Flux 2 VAE (private, needs token)
-if [ ! -f models/vae/ae.safetensors ]; then
-  curl -L -o models/vae/ae.safetensors \
+# Flux 2 VAE (private, needs token) — renamed to flux2-vae.safetensors
+if [ ! -f models/vae/flux2-vae.safetensors ]; then
+  curl -L -o models/vae/flux2-vae.safetensors \
     --create-dirs \
     --header "Authorization: Bearer $HF_TOKEN" \
     "https://huggingface.co/black-forest-labs/FLUX.2-dev/resolve/main/vae/diffusion_pytorch_model.safetensors"

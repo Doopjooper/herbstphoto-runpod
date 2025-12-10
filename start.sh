@@ -84,8 +84,8 @@ wget --header="Authorization: Bearer ${HF_TOKEN}" \
 # Dependency fixes
 # -------------------------
 
-# Pin versions to avoid numpy/transformers / torch issues
-pip install --no-cache-dir "numpy<2.0" "transformers==4.37.2"
+# Numpy <2 for binary compatibility, recent transformers for Pixtral
+pip install --no-cache-dir "numpy<2.0" "transformers==4.53.3"
 
 # -------------------------
 # Launch ComfyUI

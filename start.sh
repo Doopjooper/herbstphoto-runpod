@@ -11,6 +11,7 @@ apt-get update && apt-get install -y curl git git-lfs wget
 # Require HF token from environment
 if [ -z "$HF_TOKEN" ]; then
   echo "ERROR: HF_TOKEN environment variable is not set."
+  echo "Create a Hugging Face read token, accept FLUX.2-dev license, and set HF_TOKEN in the template."
   exit 1
 fi
 
@@ -77,7 +78,7 @@ cd /workspace/ComfyUI
 # FLUX.2 main UNet (requires HF token)
 if [ ! -f models/diffusion_models/flux2-dev.safetensors ]; then
   echo "Downloading FLUX.2-dev UNet..."
-  curl -L --fail --retry 3 --retry-delay 10 \
+  curl -fL --retry 3 --retry-delay 10 \
     --create-dirs \
     -H "Authorization: Bearer $HF_TOKEN" \
     -o models/diffusion_models/flux2-dev.safetensors \
@@ -87,7 +88,7 @@ fi
 # FLUX.2 Mistral text encoder (public Comfy-Org split)
 if [ ! -f models/text_encoders/mistral_small_flux2_fp8.safetensors ]; then
   echo "Downloading FLUX.2 text encoder (Mistral)..."
-  curl -L --fail --retry 3 --retry-delay 10 \
+  curl -fL --retry 3 --retry-delay 10 \
     --create-dirs \
     -o models/text_encoders/mistral_small_flux2_fp8.safetensors \
     "https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/text_encoders/mistral_3_small_flux2_fp8.safetensors"
@@ -96,27 +97,38 @@ fi
 # HerbstPhoto LoRA (requires HF token)
 if [ ! -f models/loras/HerbstPhoto_v4_Flux2.safetensors ]; then
   echo "Downloading HerbstPhoto_v4_Flux2 LoRA..."
-  curl -L --fail --retry 3 --retry-delay 10 \
+  curl -fL --retry 3 --retry-delay 10 \
     --create-dirs \
     -H "Authorization: Bearer $HF_TOKEN" \
     -o models/loras/HerbstPhoto_v4_Flux2.safetensors \
     "https://huggingface.co/CalvinHerbst/HerbstPhoto_v4_Flux2/resolve/main/HerbstPhoto_v4_Flux2.safetensors"
 fi
 
-# FLUX.2 VAE from Comfy-Org (public, correct for Comfy)
+# FLUX.2 VAE from Comfy-Org (public, Comfy format)
 if [ ! -f models/vae/flux2-vae.safetensors ]; then
   echo "Downloading FLUX.2 VAE (Comfy-Org)..."
-  curl -L --fail --retry 3 --retry-delay 10 \
+  curl -fL --retry 3 --retry-delay 10 \
     --create-dirs \
     -o models/vae/flux2-vae.safetensors \
     "https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/vae/flux2-vae.safetensors"
+fi
+
+# Sanity checks: bail out if core files are missing/empty
+if [ ! -s models/diffusion_models/flux2-dev.safetensors ]; then
+  echo "ERROR: flux2-dev.safetensors missing or empty. Check HF_TOKEN and FLUX.2-dev access."
+  exit 1
+fi
+
+if [ ! -s models/vae/flux2-vae.safetensors ]; then
+  echo "ERROR: flux2-vae.safetensors missing or empty."
+  exit 1
 fi
 
 # Input placeholder
 mkdir -p input
 if [ ! -f input/ImageToImagePlaceHolder.png ]; then
   echo "Downloading placeholder image..."
-  curl -L --fail --retry 3 --retry-delay 10 \
+  curl -fL --retry 3 --retry-delay 10 \
     -H "Authorization: Bearer $HF_TOKEN" \
     -o input/ImageToImagePlaceHolder.png \
     "https://huggingface.co/CalvinHerbst/HerbstPhoto_v4_Flux2/resolve/main/ImageToImagePlaceHolder.png"
@@ -126,7 +138,7 @@ fi
 mkdir -p user/default/workflows
 if [ ! -f user/default/workflows/HerbstPhoto_Flux2_ComfyUI_Workflow.json ]; then
   echo "Downloading default HerbstPhoto Flux2 workflow..."
-  curl -L --fail --retry 3 --retry-delay 10 \
+  curl -fL --retry 3 --retry-delay 10 \
     -H "Authorization: Bearer $HF_TOKEN" \
     -o user/default/workflows/HerbstPhoto_Flux2_ComfyUI_Workflow.json \
     "https://huggingface.co/CalvinHerbst/HerbstPhoto_v4_Flux2/resolve/main/HerbstPhoto_Flux2_ComfyUI_Workflow_v02.json"
@@ -136,7 +148,7 @@ fi
 # Launch Jupyter on 8888 (background) + ComfyUI on 8188 (foreground)
 # --------------------------------------------------------------------
 
-# WARNING: no auth on Jupyter; fine for private pods, not for public internet exposure.
+# WARNING: no auth on Jupyter; fine for private pods, NOT for public internet.
 jupyter lab --ip 0.0.0.0 --port 8888 --no-browser --NotebookApp.token='' --NotebookApp.password='' &
 
 python main.py --listen 0.0.0.0 --port 8188
